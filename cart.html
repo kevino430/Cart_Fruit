@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Fruits Shop</title>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+      integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="stylesheet"
+      href="https://use.fontawesome.com/releases/v5.8.1/css/all.css"
+      integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf"
+      crossorigin="anonymous"
+    />
+    <style>
+      body {
+        background: #eee;
+      }
+
+      /* .cart {} */
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <!-- 商品卡 -->
+      <div class="row mt-3 mb-3" id="list"></div>
+
+      <!-- 購物車顯示欄 -->
+      <div class="row justify-content-center">
+        <div class="col-4">
+          <div id="cart" class="cart card">
+            <div class="card-body">
+              <h3 class="card-title h5">購物車</h3>
+              <table class="table table-sm">
+                <thead>
+                  <tr>
+                    <th class="text-nowrap">品名</th>
+                    <th class="text-nowrap">單價</th>
+                    <th style="width: 100px">數量</th>
+                  </tr>
+                </thead>
+                <tbody id="cart-list"></tbody>
+              </table>
+              <span id="subTotal"></span>
+              <button class="btn btn-info btn-block" id="payBill">結帳</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- container -->
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script>
+      //載入資料 :商品卡
+      $.ajax({
+        url: "fruit.json",
+        type: "GET",
+        dataType: "json",
+      })
+        .done(function (response) {
+          var lists = "";
+          for (i = 0; i < response.length; i++) {
+            lists += `
+              <div class="col-sm-3">
+                  <div class="card " >
+                    <div class="card-body">
+                        <img class="card-img-top" src="images/${response[i]["image"]}" alt="">
+                        <h3 class="card-title h4">${response[i]["name"]}</h3>
+                        <div class="d-flex justify-content-between">
+                            <div class="text-danger h5">$ ${response[i]["price"]}</div>
+                            <div><a class="btn btn-info text-white add-card" d-amount="0" data-name="${response[i]["name"]}" data-price="${response[i]["price"]}"><i class="fas fa-cart-plus"></i></a></div>
+                        </div>
+                    </div>
+                  </div>
+              </div>
+            `;
+          }
+          $("#list").append(lists);
+        })
+        .fail(function (xhr) {
+          alert("you fail");
+        });
+
+      // 購物車內容  itme組成為: name:品名 price:價格  數量(input type="number")
+      $("#list").on("click ", ".add-card", function () {
+        let name = $(this).data("name");
+        let price = $(this).data("price");
+        let item = `
+            <tr>
+                <td>${name}</td>
+                <td>${price}</td>
+                <td><input type="number" class="form-control text-right number" value="1" min="0"></td>
+            </tr>
+        `;
+        // $("#cart-list").append(item);  //原檔
+
+        // 1. 判斷 項目存在與否
+        if ($(this).attr("d-amount") == 0) {
+          //如果判斷不存在，就加一行
+          $("#cart-list").append(item);
+          $(this).attr("d-amount", 1);
+        } else {
+          //如果判斷存在，就找尋該項目並加一
+          $("#cart-list tr").each(function (i) {
+            let val = Number($(this).find("input").val()) + 1;
+            let test = $(this).children().eq(0).text();
+            if (test == name) {
+              $(this).find("input").attr("value", val);
+            }
+          });
+        }
+
+        let cart = $("#cart-list tr");
+        let sum = 0;
+        let content = "";
+        cart.each(function (i) {
+          let name = $(this).children().eq(0).text();
+          let price = Number($(this).children().eq(1).text());
+          let quanty = Number($(this).find("input").val());
+          sum += price * quanty;
+        });
+        $("#subTotal").text("總共 $ " + sum);
+
+        $(".number").on("change keyup", function () {
+          let cart = $("#cart-list tr");
+          let sum = 0;
+          let content = "";
+          cart.each(function (i) {
+            let name = $(this).children().eq(0).text();
+            let price = Number($(this).children().eq(1).text());
+            let quanty = Number($(this).find("input").val());
+            sum += price * quanty;
+          });
+          $("#subTotal").text("總共 $ " + sum);
+        });
+      });
+
+      //結帳
+      $("#payBill").click(function () {
+        let cart = $("#cart-list tr");
+        let sum = 0;
+        let content = "";
+        cart.each(function (i) {
+          let name = $(this).children().eq(0).text();
+          let price = Number($(this).children().eq(1).text());
+          let quanty = Number($(this).find("input").val());
+          sum += price * quanty;
+          // content += name + "x" + quanty + ",  "
+        });
+
+        if (sum < 500) {
+          alert("共 " + sum + "元 ...謝謝");
+        } else {
+          alert("共" + sum + "元! 大爺~歡迎您再度光臨");
+        }
+
+        //清空
+        cart.remove();
+        $("#list div").each(function () {
+          $(this).find("button").attr("d-amount", 0);
+          //重新導入
+          location.reload();
+        });
+      });
+    </script>
+  </body>
+</html>
